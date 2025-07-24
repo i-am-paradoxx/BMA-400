@@ -1,0 +1,176 @@
+
+#include <Wire.h>
+#include "SparkFun_BMA400_Arduino_Library.h"
+#include <math.h>
+#include <Preferences.h>
+
+
+//using single i2c bus
+TwoWire I2CBus1 = TwoWire(0);
+
+
+//defining all the pins
+const int Lamp_Pin = 2;
+const int RECALIBRATION_PIN = 25;
+const int RECALIBRATION_HOLD_TIME = 5000;
+
+
+//i2c enable for sensor
+const int SDA1_pin = 22;
+const int SCL1_pin = 21;
+
+
+BMA400 accelerometer1;
+uint8_t i2cAddress = BMA400_I2C_ADDRESS_DEFAULT;
+
+
+Preferences preferences;
+
+
+float alpha = 0.05;
+float filteredRoll1 = 0, filteredPitch1 = 0;
+
+
+float offsetX1 = 0.0, offsetY1 = 0.0, offsetZ1 = 0.0;
+
+
+bool countingRECALIBRATION = false;
+unsigned long RECALIBRATIONStart = 0;
+bool calibration_done = false;
+
+
+void setup() {
+  Serial.begin(115200);
+  delay(1000);
+  
+
+
+  I2CBus1.begin(SDA1_pin, SCL1_pin);
+
+
+  if (accelerometer1.beginI2C(i2cAddress, I2CBus1) != BMA400_OK)
+    Serial.println("Error: BMA400 not connected!");
+  else
+    Serial.println("BMA400 connected.");
+
+
+  pinMode(Lamp_Pin, OUTPUT);
+  pinMode(RECALIBRATION_PIN, INPUT_PULLDOWN);  ( PULLUP)
+
+
+//checking for preferences
+  preferences.begin("tilt", true);
+  bool savedOffset = preferences.getBool("calibrated", false);
+  preferences.end();
+
+
+  if (!savedOffset) {
+    Serial.println("No saved calibration. Calibrating...");
+    calibrateSensors();
+  } else {
+    preferences.begin("tilt", false);
+    offsetX1 = preferences.getFloat("refX1", 0.0);
+    offsetY1 = preferences.getFloat("refY1", 0.0);
+    offsetZ1 = preferences.getFloat("refZ1", 0.0);
+    preferences.end();
+    Serial.println("Calibration loaded.");
+  }
+ delay(5000);
+}
+
+
+void loop() {
+  monitorRECALIBRATIONButton();
+
+
+  accelerometer1.getSensorData();
+
+
+  float x1 = accelerometer1.data.accelX - offsetX1;
+  float y1 = accelerometer1.data.accelY - offsetY1;
+  float z1 = accelerometer1.data.accelZ - offsetZ1;
+
+
+  float roll1 = atan2(y1, sqrt(x1 * x1 + z1 * z1)) * 180.0 / M_PI;
+  float pitch1 = atan2(-x1, sqrt(y1 * y1 + z1 * z1)) * 180.0 / M_PI;
+
+
+  filteredRoll1 = alpha * roll1 + (1 - alpha) * filteredRoll1;
+  filteredPitch1 = alpha * pitch1 + (1 - alpha) * filteredPitch1;
+
+
+  // Lamp logic
+  if (abs(filteredRoll1) > 5 || abs(filteredPitch1) > 5) {
+    digitalWrite(Lamp_Pin, HIGH);}
+  else {
+    digitalWrite(Lamp_Pin, LOW);
+  }
+Serial.println("Roll and Pitch from sensor:");
+
+
+  // printing sensor value
+  Serial.print("Sensor -> Roll: ");
+  Serial.print(filteredRoll1, 2);
+  Serial.print("°, Pitch: ");
+  Serial.print(filteredPitch1, 2);
+  Serial.println("°");
+
+
+  Serial.println("------------------------");
+  delay(20);
+}
+
+
+//button logic
+void monitorRECALIBRATIONButton() {
+  if (digitalRead(RECALIBRATION_PIN) == HIGH) {
+    if (!countingRECALIBRATION) {
+      countingRECALIBRATION = true;
+      RECALIBRATIONStart = millis();
+    } else if ((millis() - RECALIBRATIONStart >= RECALIBRATION_HOLD_TIME) && !calibration_done) {
+      calibrateSensors();
+      calibration_done = true;
+    }
+  } else {
+    countingRECALIBRATION = false;
+    calibration_done = false;
+  }
+}
+//calibration function
+void calibrateSensors() {
+  Serial.println("Calibrating sensor... Keep device still.");
+
+
+  float sumX1 = 0, sumY1 = 0, sumZ1 = 0;
+  int samples = 100;
+
+
+  for (int i = 0; i < samples; i++) {
+    accelerometer1.getSensorData();
+
+
+    sumX1 += accelerometer1.data.accelX;
+    sumY1 += accelerometer1.data.accelY;
+    sumZ1 += accelerometer1.data.accelZ;
+
+
+    delay(10);
+  }
+
+
+  offsetX1 = sumX1 / samples;
+  offsetY1 = sumY1 / samples;
+  offsetZ1 = (sumZ1 / samples) - 1.0;
+
+
+  preferences.begin("tilt", false);
+  preferences.putFloat("refX1", offsetX1);
+  preferences.putFloat("refY1", offsetY1);
+  preferences.putFloat("refZ1", offsetZ1);
+  preferences.putBool("calibrated", true);
+  preferences.end();
+
+
+  Serial.println("Calibration complete and saved.");
+}
+
