@@ -11,7 +11,8 @@ TwoWire I2CBus2 = TwoWire(1);
 
 
 //defining all the pins
-const int LED_Pin = 2;
+
+const int LED_Pin = 2;            //Change the Pin No. as per your requirement
 const int RECALIBRATION_PIN = 25;
 const int RECALIBRATION_HOLD_TIME = 5000;
 
