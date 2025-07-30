@@ -93,20 +93,15 @@ The system aims to:
 ---
 
 ## Wiring Diagram
-
-```
-ESP32-C6       BMA400 #1       BMA400 #2       LED             Button
---------       ---------       ---------       ---             ------
-GPIO 22   <--> SDA             SDA
-GPIO 21   <--> SCL             SCL
-3.3V      <--> VDD             VDD
-GND       <--> GND             GND
-                               
-GPIO 2    <--> [220Ω] -> LED -> GND
-                               
-GPIO 25   <--> Button -> [3.3kΩ] -> 3.3V
-GND       <--> Button (other terminal)
-```
+| ESP32-C6   | BMA400 #1         | BMA400 #2         | LED                | Button                        |
+|------------|-------------------|-------------------|--------------------|-------------------------------|
+| GPIO 22    | SDA               | SDA               |                    |                               |
+| GPIO 21    | SCL               | SCL               |                    |                               |
+| 3.3V       | VDD               | VDD               |                    |                               |
+| GND        | GND               | GND               |                    |                               |
+| GPIO 2     |                   |                   | [220Ω] -> LED -> GND |                               |
+| GPIO 25    |                   |                   |                    | Button -> [3.3kΩ] -> 3.3V     |
+| GND        |                   |                   |                    | Button (other terminal)        |
 
 ### Detailed Pin Connections
 
