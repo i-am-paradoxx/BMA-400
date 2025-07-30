@@ -12,7 +12,7 @@
 
 ## Table of Contents
 
-- [Overview](#overview)
+- [Overview](#wiring-diagram)
 - [Hardware Requirements](#hardware-requirements)
 - [Wiring Diagram](#wiring-diagram)
 - [Software Setup](#software-setup)
