@@ -18,7 +18,6 @@
 - [Software Setup](#software-setup)
 - [Installation Guide](#installation-guide)
 - [Usage](#usage)
-- [Calibration](#calibration)
 - [Troubleshooting](#troubleshooting)
 - [Features](#features)
 
